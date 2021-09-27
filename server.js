@@ -17,6 +17,11 @@ const app = express();
 //     res.json(results);
 //   });
 
+//FRONT END
+//we can set up some more Express.js middleware that instructs the server to make certain files readily available and to not gate it behind a server endpoint bc all of the files needed for index.js to be styled is in the public folder
+app.use(express.static('public'));
+
+
 //parse incoming string or array data for post requests
 //"In order for our server to accept incoming data the way we need it to, we need to tell our Express.js app to intercept our POST request before it gets to the callback function. At that point, the data will be run through a couple of functions to take the raw data transferred over HTTP and convert it to a JSON object."
 app.use(express.urlencoded({ extended: true }));
@@ -26,6 +31,7 @@ app.use(express.json());
 //Middleware functions can serve many different purposes. Ultimately they allow us to keep our route endpoint callback functions more readable while letting us reuse functionality across routes to keep our code DRY.
 //The express.urlencoded({extended: true}) method is a method built into Express.js. It takes incoming POST data and converts it to key/value pairings that can be accessed in the req.body object. The extended: true option set inside the method call informs our server that there may be sub-array data nested in it as well, so it needs to look as deep into the POST data as possible to parse all of the data correctly.
 // The express.json() method we used takes incoming POST data in the form of JSON and parses it into the req.body JavaScript object. Both of the above middleware functions need to be set up every time you create a server that's looking to accept POST data.
+
 
 // funciton will take in req.query as argument and filter through the animals accordingly- returning the new filtered array 
 function filterByQuery(query, animalsArray) {
@@ -98,6 +104,8 @@ function createNewAnimal(body, animalsArray) {
         return true;
     }
 
+
+
 // call filter by query function in the app.get() callback
 app.get('/api/animals', (req, res) => {
     let results = animals;
@@ -133,7 +141,30 @@ app.post('/api/animals', (req, res) => {
     }
   });
 
+//FRONT END PART 
+//We'll start with getting index.html to be served from our Express.js server. 
+// '/' brings us to the root of the server
+// this get request has 1 job- to respond with an html play to display in the browser so instead of res.json() we use res.sendFile()
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, './public/index.html'));
+  });
 
+  //front end for animals.html
+app.get('/animals', (req, res) => {
+    res.sendFile(path.join(__dirname, './public/animals.html'));
+  });
+
+  //front end for zookeepers.html
+  app.get('/zookeepers', (req, res) => {
+    res.sendFile(path.join(__dirname, './public/zookeepers.html'));
+  });
+
+  //front end- wildcard- if user was to try and go to /about for ex.
+  //The * will act as a wildcard, meaning any route that wasn't previously defined will fall under this request and will receive the homepage as the response
+  //The order of your routes matters! The * route should always come last. Otherwise, it will take precedence over named routes, and you won't see what you expect to see on routes like /zookeeper 
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, './public/index.html'));
+  });
 //going to chain listen() method to our server
 app.listen(PORT, () => {
     console.log(`API server now on port ${PORT}!`);
