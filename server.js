@@ -65,8 +65,8 @@ app.get('/api/animals', (req, res) => {
 
 //going to chain listen() method to our server
 app.listen(PORT, () => {
-    console.log('Api server now at port 3001!');
-});
+    console.log(`API server now on port ${PORT}!`);
+  });
 
 
 
