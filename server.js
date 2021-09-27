@@ -1,6 +1,8 @@
 // after installing "npm init -y and npm i express" in terminal
 const express = require('express');
 const { animals } = require('./data/animals.json');
+const fs = require('fs');
+const path = require('path');
 // telling heroku server host port 
 const PORT = process.env.PORT || 3001;
 //setting up the server takes 2 steps: 1 to instantiate the server 
@@ -14,6 +16,16 @@ const app = express();
 //     console.log(req.query);
 //     res.json(results);
 //   });
+
+//parse incoming string or array data for post requests
+//"In order for our server to accept incoming data the way we need it to, we need to tell our Express.js app to intercept our POST request before it gets to the callback function. At that point, the data will be run through a couple of functions to take the raw data transferred over HTTP and convert it to a JSON object."
+app.use(express.urlencoded({ extended: true }));
+//parse incoming json data
+app.use(express.json());
+//^^ First, we used the app.use() method. This is a method executed by our Express.js server that mounts a function to the server that our requests will pass through before getting to the intended endpoint. The functions we can mount to our server are referred to as middleware.
+//Middleware functions can serve many different purposes. Ultimately they allow us to keep our route endpoint callback functions more readable while letting us reuse functionality across routes to keep our code DRY.
+//The express.urlencoded({extended: true}) method is a method built into Express.js. It takes incoming POST data and converts it to key/value pairings that can be accessed in the req.body object. The extended: true option set inside the method call informs our server that there may be sub-array data nested in it as well, so it needs to look as deep into the POST data as possible to parse all of the data correctly.
+// The express.json() method we used takes incoming POST data in the form of JSON and parses it into the req.body JavaScript object. Both of the above middleware functions need to be set up every time you create a server that's looking to accept POST data.
 
 // funciton will take in req.query as argument and filter through the animals accordingly- returning the new filtered array 
 function filterByQuery(query, animalsArray) {
@@ -59,6 +71,33 @@ function findById(id, animalsArray) {
     return result;
   }
   
+//Here, we just created a function that accepts the POST route's req.body value and the array we want to add the data to. In this case, that array will be the animalsArray, because the function is for adding a new animal to the catalog.
+// We are going to execute this function from within the app.post() route's callback function and when we do, it'll take the new animal data and add it to the animalsArray we passed in, and then write the new array data to animals.json. After saving it, we'll send the data back to the route's callback function so it can finally respond to the request
+function createNewAnimal(body, animalsArray) {
+    const animal = body;
+    animalsArray.push(animal);
+    fs.writeFileSync(
+      path.join(__dirname, './data/animals.json'),
+      JSON.stringify({ animals: animalsArray }, null, 2)
+    );
+    return animal;
+  }
+    // The null argument means we don't want to edit any of our existing data; if we did, we could pass something in there. The 2 indicates we want to create white space between our values to make it more readable
+
+    //validate animal
+    function validateAnimal(animal) {
+        if (!animal.name || typeof animal.name !== 'string') {
+            return false;
+        }
+        if (!animal.species || typeof animal.species !== 'string'){
+            return false;
+        }
+        if (!animal.personalityTraits || !Array.isArray(animal.personalityTraits)) {
+            return false;
+        }
+        return true;
+    }
+
 // call filter by query function in the app.get() callback
 app.get('/api/animals', (req, res) => {
     let results = animals;
@@ -76,6 +115,25 @@ app.get('/api/animals/:id', (req, res) => {
       res.send(404);
     }
   });
+
+//set up a route on our server that accepts data to be stored/used server-side
+app.post('/api/animals', (req, res) => {
+    // set id based on what the next index of the array will be
+    req.body.id = animals.length.toString();
+    
+    // if any data in req.body is incorrect, send 404 error back
+      // the line res.status().send(); is a response method to relay a message to the client making the request.
+    if (!validateAnimal(req.body)) {
+        res.status(404).send('The animal is not properly formatted');
+    } else {
+    // add animal to json file and animals array in this function
+    const animal = createNewAnimal(req.body, animals);
+  
+    res.json(animal);
+    }
+  });
+
+
 //going to chain listen() method to our server
 app.listen(PORT, () => {
     console.log(`API server now on port ${PORT}!`);
