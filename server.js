@@ -1,7 +1,8 @@
 // after installing "npm init -y and npm i express" in terminal
 const express = require('express');
 const { animals } = require('./data/animals.json');
-
+// telling heroku server host port 
+const PORT = process.env.PORT || 3001;
 //setting up the server takes 2 steps: 1 to instantiate the server 
 // we assign express() to app variable to later chain on methods to the express.js server. 
 const app = express();
@@ -63,7 +64,7 @@ app.get('/api/animals', (req, res) => {
 })
 
 //going to chain listen() method to our server
-app.listen(3001, () => {
+app.listen(PORT, () => {
     console.log('Api server now at port 3001!');
 });
 
